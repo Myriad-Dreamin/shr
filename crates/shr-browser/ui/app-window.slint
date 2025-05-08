@@ -1,5 +1,5 @@
 import { Button, VerticalBox } from "std-widgets.slint";
-import { TabWidget, StandardButton, GridBox, VerticalBox, ListView } from "std-widgets.slint";
+import { TabWidget, StandardButton, GridBox, VerticalBox, ListView, Palette } from "std-widgets.slint";
 
 export struct Rank  {
     path_id: string,
@@ -7,81 +7,113 @@ export struct Rank  {
     size: string,
     ratio: float,
     all_ratio: float,
+    is_file: bool,
 }
 
 export component AppWindow inherits Window {
     title: "Shr Browser";
-
+    in property <bool> disable_progress;
+    in property <string> progress_files;
+    in property <string> total_files;
+    in property <float> elapsed;
+    in property <float> speed;
     in property <Rank> current;
     in property <[Rank]> ranks;
-
     callback goto-parent();
     callback goto-path(path_id: string);
-    
-    function human-unit(unit : float) -> string {
-        if (unit > 900 * 1000 * 1000) {
-            return "\{round(unit / 1000 / 1000 / 100) / 10} GB";
-        } else if (unit > 900 * 1000) {
-            return "\{round(unit / 1000 / 100) / 10} MB";
-        } else if (unit > 900) {
-            return "\{round(unit / 100) / 10} kB";
-        }
-        return "\{unit} B";
+    function makeRatio(ratio: float) -> string {
+        (ratio * 100).to-fixed(2)
     }
-
     VerticalBox {
-        HorizontalLayout {
-            padding: 5px; spacing: 5px;
-            vertical-stretch: 0;
-            t1 := Text { horizontal-stretch: 1; text: "Path"; }
-            t2 := Text { width: 40px; overflow: elide; text: "Size"; }
-            t3 := Text { width: 40px; overflow: elide; text: "Ratio"; }
+        if !root.disable_progress: Text {
+            text: @tr("Processing: {0} / {1} files, {2} events/s in {3} seconds", progress_files, total_files, speed.to-fixed(2), elapsed.to-fixed(2));
         }
-        ListView {
+        if root.disable_progress: Text {
+            text: @tr("Processed: {0} files, {1} events/s in {2} seconds", total_files, speed.to-fixed(2), elapsed.to-fixed(2));
+        }
+        Text {
+            text: @tr("In {0}, Has size {1} ({2}%)", current.path, current.size, root.makeRatio(current.all_ratio));
+        }
 
-            for disk in root.ranks : VerticalLayout {
+        HorizontalLayout {
+            padding: 5px;
+            spacing: 5px;
+            vertical-stretch: 0;
+            t1 := Text {
+                horizontal-stretch: 1;
+                text: "Path";
+            }
+
+            t2 := Text {
+                width: 40px;
+                overflow: elide;
+                text: "Size";
+            }
+
+            t3 := Text {
+                width: 40px;
+                overflow: elide;
+                text: "Ratio";
+            }
+        }
+
+        ListView {
+            for disk in root.ranks: VerticalLayout {
                 HorizontalLayout {
                     padding: 5px;
                     spacing: 5px;
                     accessible-role: list-item;
-    
-                    Text { 
-                        width: t1.width; 
-                        overflow: elide; 
-                        text: disk.path; 
-    
+                    Text {
+                        width: t1.width;
+                        overflow: elide;
+                        text: disk.path;
                         area := TouchArea {
                             width: parent.width;
                             height: parent.height;
                             clicked => {
+                                if disk.is_file {
+                                    return;
+                                }
                                 root.goto-path(disk.path_id);
                             }
                         }
                     }
-                    Text { width: t2.width; text: disk.size; }
-                    Text { width: t3.width; text: round(100 * disk.ratio) + "%"; }
+
+                    Text {
+                        width: t2.width;
+                        text: disk.size;
+                    }
+
+                    Text {
+                        width: t3.width;
+                        text: root.makeRatio(disk.ratio) + "%";
+                    }
                 }
-    
+
                 Rectangle {
                     min-width: t.min-width + 10px;
                     height: 20px;
-                    background: lightblue;
-
+                    background: Palette.color-scheme == ColorScheme.dark ? black.mix(lightgray, 95%) : lightgray;
                     Rectangle {
-                        x:0;
-                        background: lightgray;
+                        x: 0;
+                        background: Palette.color-scheme == ColorScheme.dark ? darkmagenta : lightblue;
                         width: disk.ratio * parent.width;
                     }
+
                     t := Text {
-                        y:0;
+                        vertical-alignment: TextVerticalAlignment.center;
+                        y: 0;
                         x: 5px;
-                        text: round(100 * disk.ratio) + "% of " + round(100 * disk.all_ratio) + "%";
+                        text: root.makeRatio(disk.ratio) + "% of " + root.makeRatio(disk.all_ratio) + "%";
                     }
 
                     area2 := TouchArea {
                         width: parent.width;
                         height: parent.height;
                         clicked => {
+                            if disk.is_file {
+                                return;
+                            }
                             root.goto-path(disk.path_id);
                         }
                     }
