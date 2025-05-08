@@ -1,0 +1,33 @@
+[package]
+name = "shr-cli"
+description = "shr hunts and reports disk space."
+categories = ["compilers"]
+keywords = ["language", "compiler"]
+authors.workspace = true
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "shr"
+path = "src/main.rs"
+
+[dependencies]
+
+anyhow.workspace = true
+shr = { workspace = true, features = ["serde"] }
+tokio = { workspace = true, optional = true }
+compio = { workspace = true, optional = true }
+serde_json.workspace = true
+clap.workspace = true
+
+[features]
+default = ["compio"]
+tokio = ["dep:tokio", "shr/tokio"]
+compio = ["dep:compio", "shr/compio"]
+
+[lints]
+workspace = true

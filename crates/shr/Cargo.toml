@@ -1,0 +1,28 @@
+[package]
+name = "shr"
+description = "shr hunts and reports disk space."
+categories = ["compilers"]
+keywords = ["language", "compiler"]
+authors.workspace = true
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+
+anyhow.workspace = true
+compio = { workspace = true, features = ["dispatcher"], optional = true }
+futures = { workspace = true, optional = true }
+indexmap.workspace = true
+serde = { workspace = true, features = ["derive"], optional = true }
+tokio = { workspace = true, optional = true }
+
+
+[features]
+compio = ["dep:compio", "futures"]
+
+[lints]
+workspace = true

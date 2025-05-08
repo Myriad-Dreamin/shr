@@ -1,5 +1,5 @@
 [workspace.package]
-description = "shr checks and reports disk space."
+description = "shr hunts and reports disk space."
 authors = ["Myriad-Dreamin"]
 version = "0.1.0"
 rust-version = "1.85.0" # MSRV
@@ -28,27 +28,34 @@ lto = "thin"
 
 # general
 anyhow = "1"
-## async
-# tokio = { version = "1", features = ["full"] }
+# async
+tokio = { version = "1", features = ["full"] }
+compio = { version = "0.14.0", features = ["macros"] }
+futures = { version = "0.3" }
 ## sync
 # rayon = "1"
 
+# data structures
+indexmap = { version = "2" }
+
 # cryptography and processing
 ## serialization
-# serde = "1"
+serde = "1"
 ## serialization:json
-# serde_json = "1"
+serde_json = "1"
 ## serialization:toml
 # toml = "0.8"
 
 # cli
-## clap = { version = "4.5", features = ["derive", "env", "unicode", "wrap_help"] }
+clap = { version = "4.5", features = ["derive", "env", "unicode"] }
 ## clap_complete = "4.5"
 ## clap_complete_fig = "4.5"
 
 # logging and tracing
 # env_logger = "0.11"
 # log = "0.4.25"
+
+shr = { path = "crates/shr", version = "0.1.0" }
 
 [workspace.lints.rustdoc]
 broken_intra_doc_links = "warn"
