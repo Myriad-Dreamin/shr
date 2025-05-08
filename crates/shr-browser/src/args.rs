@@ -4,6 +4,7 @@ use clap::Parser;
 use shr::Shr;
 
 #[derive(Debug, Parser)]
+#[command(version, about)]
 pub struct Args {
     /// The directory to scan.
     #[clap()]
