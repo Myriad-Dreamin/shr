@@ -59,7 +59,7 @@ impl EventRef<'_> {
     }
 }
 
-impl<'a> EventRef<'a> {
+impl EventRef<'_> {
     /// Creates a new `EventRef` instance.
     pub fn display(&self) -> EventDisplay {
         match self.data {

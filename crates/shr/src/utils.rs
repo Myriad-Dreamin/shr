@@ -33,7 +33,7 @@ fn get_number_format(output_str: &str) -> Option<(u64, char)> {
 /// A struct to represent a human-readable number.
 pub struct Hr<'a>(u64, &'a str);
 
-impl<'a> fmt::Display for Hr<'a> {
+impl fmt::Display for Hr<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let size = self.0;
         match get_number_format(self.1) {
@@ -59,6 +59,6 @@ impl<'a> fmt::Display for Hr<'a> {
 
 /// Converts a number to a human-readable format.
 /// output_str: `si` for SI units, `bi` for binary units, or `b` for bytes.
-pub fn human_readable_number<'a>(size: u64, output_str: &'a str) -> Hr<'a> {
+pub fn human_readable_number(size: u64, output_str: &str) -> Hr {
     Hr(size, output_str)
 }
