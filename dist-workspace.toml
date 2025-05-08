@@ -25,19 +25,19 @@ targets = [
     "arm-unknown-linux-musleabihf",
     "armv7-unknown-linux-gnueabihf",
     "armv7-unknown-linux-musleabihf",
-    "i686-pc-windows-msvc",
-    "i686-unknown-linux-gnu",
-    "i686-unknown-linux-musl",
-    "powerpc64-unknown-linux-gnu",
-    "powerpc64le-unknown-linux-gnu",
+    # "i686-pc-windows-msvc",
+    # "i686-unknown-linux-gnu",
+    # "i686-unknown-linux-musl",
+    # "powerpc64-unknown-linux-gnu",
+    # "powerpc64le-unknown-linux-gnu",
     "x86_64-apple-darwin",
     "x86_64-pc-windows-msvc",
     "x86_64-unknown-linux-gnu",
     "x86_64-unknown-linux-musl",
     "riscv64gc-unknown-linux-gnu",
     "riscv64gc-unknown-linux-musl",
-    "loongarch64-unknown-linux-gnu",
-    "loongarch64-unknown-linux-musl",
+    # "loongarch64-unknown-linux-gnu",
+    # "loongarch64-unknown-linux-musl",
 ]
 # Whether to auto-include files like READMEs, LICENSEs, and CHANGELOGs (default true)
 auto-includes = false
@@ -57,12 +57,13 @@ global = "ubuntu-22.04"
 aarch64-pc-windows-msvc = "windows-latest"
 aarch64-unknown-linux-gnu = "ubuntu-22.04"
 aarch64-unknown-linux-musl = "ubuntu-22.04"
+arm-unknown-linux-gnueabihf = "ubuntu-22.04"
 arm-unknown-linux-musleabihf = "ubuntu-22.04"
 armv7-unknown-linux-gnueabihf = "ubuntu-22.04"
 armv7-unknown-linux-musleabihf = "ubuntu-22.04"
 x86_64-unknown-linux-gnu = "ubuntu-22.04"
 x86_64-unknown-linux-musl = "ubuntu-22.04"
-# riscv64gc-unknown-linux-gnu = "ubuntu-22.04"
+riscv64gc-unknown-linux-gnu = "ubuntu-22.04"
 riscv64gc-unknown-linux-musl = "ubuntu-22.04"
 loongarch64-unknown-linux-gnu = "ubuntu-22.04"
 loongarch64-unknown-linux-musl = "ubuntu-22.04"
