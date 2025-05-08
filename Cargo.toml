@@ -1,15 +1,15 @@
 [workspace.package]
 description = "shr hunts and reports disk space."
 authors = ["Myriad-Dreamin"]
-version = "0.1.0"
-rust-version = "1.85.0" # MSRV
+version = "0.1.0-rc1"
+rust-version = "1.85.0"                              # MSRV
 edition = "2024"
 readme = "README.md"
 license = "Apache-2.0"
 homepage = "https://github.com/Myriad-Dreamin/shr"
 repository = "https://github.com/Myriad-Dreamin/shr"
 
- 
+
 [workspace]
 resolver = "2"
 members = ["crates/*"]
@@ -55,7 +55,7 @@ clap = { version = "4.5", features = ["derive", "env", "unicode"] }
 # env_logger = "0.11"
 # log = "0.4.25"
 
-shr = { path = "crates/shr", version = "0.1.0" }
+shr = { path = "crates/shr", version = "0.1.0-rc1" }
 
 [workspace.lints.rustdoc]
 broken_intra_doc_links = "warn"

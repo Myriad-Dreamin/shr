@@ -6,6 +6,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 The changelog lines unspecified with authors are all written by the @Myriad-Dreamin.
 
-## v0.1.0 - [2077-01-01]
+## v0.1.0 - [2025-05-09]
 
-* Bumped MSRV to v1.2077 in https://github.com/Myriad-Dreamin/shr/pull/1683
+Initial Release
+
+**Full Changelog**: https://github.com/Myriad-Dreamin/shr/compare/v0.1.0...v0.1.0
