@@ -1,6 +1,6 @@
 # rust-template
 
-## Initialization
+## Setup
 
 Search and edit:
 - `rust-template`
@@ -10,3 +10,11 @@ Search and edit:
 rename the project name:
 
 - `.vscode/rust-template.code-workspace`
+
+## Development
+
+VSCode:
+
+```bash
+code .vscode/rust-template.code-workspace
+```
