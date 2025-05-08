@@ -1,6 +1,6 @@
 [package]
 name = "shr-browser"
-description = "shr hunts and reports disk space."
+description = "A frontend for shr that's using [Slint](https://slint.rs/) for the user interface. shr hunts and reports disk space."
 categories = ["compilers"]
 keywords = ["language", "compiler"]
 authors.workspace = true
@@ -23,7 +23,7 @@ open = "5"
 slint = "1.8.0"
 hyper = { version = "1", features = ["full"] }
 hyper-util = { version = "0.1", features = ["full"] }
-http-body-util = {version = "0.1", features = ["channel"]}
+http-body-util = { version = "0.1", features = ["channel"] }
 futures = "0.3"
 shr = { workspace = true, features = ["serde"] }
 serde_json.workspace = true

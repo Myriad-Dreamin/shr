@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use clap::Parser;
 
 #[derive(Debug, Parser)]
+#[command(name = "shr", version, about)]
 pub struct Args {
     /// The directory to scan.
     #[clap()]

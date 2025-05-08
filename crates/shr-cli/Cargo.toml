@@ -1,6 +1,6 @@
 [package]
 name = "shr-cli"
-description = "shr hunts and reports disk space."
+description = "CLI for shr. shr hunts and reports disk space."
 categories = ["compilers"]
 keywords = ["language", "compiler"]
 authors.workspace = true

@@ -1,4 +1,6 @@
-//! Browser impl
+//! A frontend for shr that's using [Slint](https://slint.rs/) for the user interface.
+//!
+//! shr hunts and reports disk space.
 
 // Prevent console window in addition to Slint window in Windows release builds
 // when, e.g., starting the app via file manager. Ignored on other platforms.
