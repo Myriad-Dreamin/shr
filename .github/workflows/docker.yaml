@@ -1,4 +1,4 @@
-name: rust_template::release::docker
+name: shr::release::docker
 on:
   release:
     types: [created]

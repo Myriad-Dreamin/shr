@@ -1,3 +1,3 @@
-# rust-template
+# shr
 
-The description.
+shr checks and reports disk space.

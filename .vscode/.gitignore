@@ -1,2 +1,2 @@
 *.code-workspace
-!rust-template.code-workspace
+!shr.code-workspace

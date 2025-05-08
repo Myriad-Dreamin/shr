@@ -1,6 +1,6 @@
 
 ARG RUST_VERSION=1.85.0
-ARG NAME=rust-template
+ARG NAME=shr
 
 FROM rust:${RUST_VERSION}-bullseye AS build
 ADD . /app

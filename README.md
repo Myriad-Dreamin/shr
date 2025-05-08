@@ -1,20 +1,11 @@
-# rust-template
+# shr
 
-## Setup
-
-Search and edit:
-- `rust-template`
-- `rust_template`
-- `The description.`
-
-rename the project name:
-
-- `.vscode/rust-template.code-workspace`
+`shr` checks and reports disk space.
 
 ## Development
 
 VSCode:
 
 ```bash
-code .vscode/rust-template.code-workspace
+code .vscode/shr.code-workspace
 ```
