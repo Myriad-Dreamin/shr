@@ -1,5 +1,8 @@
 .DS_STORE
 .idea
+/.jj/
+/.hg/
+/.pijul/
 
 target/
 out/

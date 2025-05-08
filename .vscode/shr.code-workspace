@@ -8,6 +8,10 @@
     "[json][jsonc][jsonl][toml]": {
       "editor.formatOnSave": true,
       "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[rust]": {
+      "editor.formatOnSave": true,
+      "editor.defaultFormatter": "rust-lang.rust-analyzer"
     }
   }
 }

@@ -14,15 +14,13 @@ rust-version.workspace = true
 [dependencies]
 
 anyhow.workspace = true
-compio = { workspace = true, features = ["dispatcher"], optional = true }
-futures = { workspace = true, optional = true }
 indexmap.workspace = true
 serde = { workspace = true, features = ["derive"], optional = true }
 tokio = { workspace = true, optional = true }
-
+rayon = { workspace = true, optional = true }
 
 [features]
-compio = ["dep:compio", "futures"]
+tokio = ["dep:tokio", "dep:rayon"]
 
 [lints]
 workspace = true

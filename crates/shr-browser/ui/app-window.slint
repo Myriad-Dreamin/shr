@@ -1,0 +1,112 @@
+import { Button, VerticalBox } from "std-widgets.slint";
+import { TabWidget, StandardButton, GridBox, VerticalBox, ListView } from "std-widgets.slint";
+
+export struct Rank  {
+    path_id: string,
+    path: string,
+    size: string,
+    ratio: float,
+    all_ratio: float,
+}
+
+export component AppWindow inherits Window {
+    title: "Shr Browser";
+
+    in property <Rank> current;
+    in property <[Rank]> ranks;
+
+    callback goto-parent();
+    callback goto-path(path_id: string);
+    
+    function human-unit(unit : float) -> string {
+        if (unit > 900 * 1000 * 1000) {
+            return "\{round(unit / 1000 / 1000 / 100) / 10} GB";
+        } else if (unit > 900 * 1000) {
+            return "\{round(unit / 1000 / 100) / 10} MB";
+        } else if (unit > 900) {
+            return "\{round(unit / 100) / 10} kB";
+        }
+        return "\{unit} B";
+    }
+
+    VerticalBox {
+        HorizontalLayout {
+            padding: 5px; spacing: 5px;
+            vertical-stretch: 0;
+            t1 := Text { horizontal-stretch: 1; text: "Path"; }
+            t2 := Text { width: 40px; overflow: elide; text: "Size"; }
+            t3 := Text { width: 40px; overflow: elide; text: "Ratio"; }
+        }
+        ListView {
+
+            for disk in root.ranks : VerticalLayout {
+                HorizontalLayout {
+                    padding: 5px;
+                    spacing: 5px;
+                    accessible-role: list-item;
+    
+                    Text { 
+                        width: t1.width; 
+                        overflow: elide; 
+                        text: disk.path; 
+    
+                        area := TouchArea {
+                            width: parent.width;
+                            height: parent.height;
+                            clicked => {
+                                root.goto-path(disk.path_id);
+                            }
+                        }
+                    }
+                    Text { width: t2.width; text: disk.size; }
+                    Text { width: t3.width; text: round(100 * disk.ratio) + "%"; }
+                }
+    
+                Rectangle {
+                    min-width: t.min-width + 10px;
+                    height: 20px;
+                    background: lightblue;
+
+                    Rectangle {
+                        x:0;
+                        background: lightgray;
+                        width: disk.ratio * parent.width;
+                    }
+                    t := Text {
+                        y:0;
+                        x: 5px;
+                        text: round(100 * disk.ratio) + "% of " + round(100 * disk.all_ratio) + "%";
+                    }
+
+                    area2 := TouchArea {
+                        width: parent.width;
+                        height: parent.height;
+                        clicked => {
+                            root.goto-path(disk.path_id);
+                        }
+                    }
+                }
+            }
+        }
+
+        Button {
+            text: "Goto Parent Directory";
+            clicked => {
+                root.goto-parent();
+            }
+        }
+    }
+    // VerticalBox {
+    //     alignment: LayoutAlignment.end;
+
+    //     Text {
+    //         text: "Path: \{root.current.path}";
+    //     }
+    //     Text {
+    //         text: "Size: \{root.current.size}";
+    //     }
+    //     Text {
+    //         text: "Ratio: " + round(100 * root.current.ratio) + "%";
+    //     }
+    // }
+}

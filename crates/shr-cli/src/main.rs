@@ -4,7 +4,6 @@
 
 mod args;
 
-use core::fmt;
 use std::io::{self, Write};
 
 use anyhow::Context;
@@ -14,8 +13,7 @@ use shr::{EventDisplay, ImmutPath};
 
 use crate::args::Args;
 
-// #[tokio::main]
-#[compio::main]
+#[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let (mut rx, f) = Args::parse().build().await;
     let mut stdout = std::io::stdout().lock();
@@ -30,10 +28,14 @@ async fn main() -> anyhow::Result<()> {
                 }) => {
                     report_entry(&mut stdout, path, size, num_files)?;
                 }
-                Some(EventDisplay::FileFinish { path, size }) => {
+                Some(EventDisplay::FileFinish {
+                    path,
+                    size,
+                    parent: _,
+                }) => {
                     report_entry(&mut stdout, path, size, 0)?;
                 }
-                Some(EventDisplay::Entry { .. }) => {}
+                Some(EventDisplay::Dir { .. }) => {}
                 None => break,
             }
         },
@@ -62,7 +64,7 @@ fn report_entry(
     let Some(path) = path else {
         return Ok(());
     };
-    let size = human_readable_number(size, "si");
+    let size = shr::utils::human_readable_number(size, "si");
     let path = path.as_ref().display();
     if num_files > 0 {
         writeln!(w, "{path} {size}, {num_files} file(s)")?;
@@ -70,64 +72,4 @@ fn report_entry(
         writeln!(w, "{path} {size}")?;
     }
     Ok(())
-}
-
-// Borrowed from: https://github.com/bootandy/dust
-
-static UNITS: [char; 5] = ['P', 'T', 'G', 'M', 'K'];
-
-// If we are working with SI units or not
-fn get_type_of_thousand(output_str: &str) -> u64 {
-    if output_str.is_empty() {
-        1024
-    } else if output_str == "si" {
-        1000
-    } else if output_str.contains('i') || output_str.len() == 1 {
-        1024
-    } else {
-        1000
-    }
-}
-
-fn get_number_format(output_str: &str) -> Option<(u64, char)> {
-    if output_str.starts_with('b') {
-        return Some((1, 'B'));
-    }
-    for (i, u) in UNITS.iter().enumerate() {
-        if output_str.starts_with((*u).to_ascii_lowercase()) {
-            let marker = get_type_of_thousand(output_str).pow((UNITS.len() - i) as u32);
-            return Some((marker, *u));
-        }
-    }
-    None
-}
-
-struct Hr<'a>(u64, &'a str);
-
-impl<'a> fmt::Display for Hr<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let size = self.0;
-        match get_number_format(self.1) {
-            Some((x, u)) => {
-                write!(f, "{}{}", (size / x), u)
-            }
-            None => {
-                for (i, u) in UNITS.iter().enumerate() {
-                    let marker = get_type_of_thousand(self.1).pow((UNITS.len() - i) as u32);
-                    if size >= marker {
-                        if size / marker < 10 {
-                            return write!(f, "{:.1}{}", (size as f32 / marker as f32), u);
-                        } else {
-                            return write!(f, "{}{}", (size / marker), u);
-                        }
-                    }
-                }
-                write!(f, "{size}B")
-            }
-        }
-    }
-}
-
-fn human_readable_number<'a>(size: u64, output_str: &'a str) -> Hr<'a> {
-    Hr(size, output_str)
 }

@@ -1,11 +1,15 @@
+//! rayon is used to avoid "Too many open files" error.
+
+use rayon::iter::ParallelBridge;
+use rayon::iter::ParallelIterator;
 pub(crate) use tokio::sync::mpsc;
 
 use super::*;
 /// The receiver for the events.
 #[derive(Debug)]
 pub struct ShrRx {
-    path_mgr: Arc<PathInterner>,
-    rx: mpsc::UnboundedReceiver<Event>,
+    pub(crate) path_mgr: Arc<PathInterner>,
+    pub(crate) rx: mpsc::UnboundedReceiver<Event>,
 }
 
 impl ShrRx {
@@ -20,6 +24,15 @@ impl ShrRx {
     }
 }
 
+pub(crate) struct Shared<'a> {
+    /// The path interner.
+    pub path_mgr: &'a PathInterner,
+    /// The sender for the events.
+    pub tx: mpsc::UnboundedSender<Event>,
+    /// Whether to follow links.
+    pub follow_links: bool,
+}
+
 /// The main struct.
 pub(crate) struct ShrTask {
     /// The parent path id.
@@ -30,113 +43,113 @@ pub(crate) struct ShrTask {
     pub path: Arc<Path>,
     /// The path to scan.
     pub remain_report_depth: usize,
-    /// The file type.
-    pub file_type: std::fs::FileType,
-    /// The path interner.
-    pub path_mgr: Arc<PathInterner>,
-    /// The sender for the events.
-    pub tx: mpsc::UnboundedSender<Event>,
-    /// Whether to follow links.
-    pub follow_links: bool,
 }
 
 impl ShrTask {
     /// Executes the task.
-    pub async fn exec(mut self) -> Option<(usize, u64)> {
+    pub fn exec(mut self, shared: &Shared) -> Option<(usize, u64)> {
         loop {
-            if self.file_type.is_file() {
-                self.send_entry();
-                // todo: this is sync
-                let file_size = self.path.metadata().ok()?.len();
+            let mt = std::fs::metadata(&self.path).report()?;
+            if mt.is_file() {
+                format_args!("scanning file: {:?}", self.path);
+                let file_size = mt.len();
 
                 if self.remain_report_depth > 0 {
                     let event = Event::FileFinish {
                         path: self.path_id,
+                        parent: self.parent,
                         size: file_size,
                     };
-                    self.send(event);
+                    let _ = shared.tx.send(event);
                 }
                 return Some((1, file_size));
-            } else if self.file_type.is_dir() {
-                self.send_entry();
-                return tokio::spawn(self.scan_dir()).await.ok()?;
-            } else if self.follow_links && self.file_type.is_symlink() {
+            } else if mt.is_dir() {
+                format_args!("scanning dir: {:?}", self.path);
+                if self.remain_report_depth > 0 {
+                    let event = Event::Dir {
+                        path: self.path_id,
+                        parent: self.parent,
+                    };
+                    let _ = shared.tx.send(event);
+                }
+                return self.scan_dir(shared);
+            } else if shared.follow_links && mt.is_symlink() {
+                format_args!("scanning link: {:?}", self.path);
                 // Follow the link
-                let path: Arc<Path> = self.path.read_link().ok()?.into();
-
-                self.path = path.clone();
-
-                let metadata = self.path.metadata().ok()?;
-                self.file_type = metadata.file_type();
+                self.path = std::fs::read_link(&self.path).report()?.into();
+            } else {
+                format_args!("skip: {:?}", self.path);
+                return Some((1, 0));
             }
         }
     }
 
-    fn scan_dir(self) -> Pin<Box<dyn Future<Output = Option<(usize, u64)>> + Send>> {
-        Box::pin(async move {
-            let tx = self.tx.clone();
-            let path_id = self.path_id;
-            let remain_report_depth = self.remain_report_depth;
-            let iter = tokio::task::spawn_blocking(move || {
-                std::io::Result::Ok(
-                    std::fs::read_dir(&self.path)?
-                        .flat_map(|t| self.dir_task(t.ok()?).map(|t| tokio::spawn(t.exec())))
-                        .collect::<Box<_>>(),
-                )
-            })
-            .await
-            .ok()?
-            .ok()?;
-            let mut num_files = iter.len();
-            let mut size = 0;
-            for task in iter {
-                let Some((num, s)) = task.await.ok().flatten() else {
-                    continue;
-                };
-                num_files += num;
-                size += s;
-            }
+    fn scan_dir(self, shared: &Shared) -> Option<(usize, u64)> {
+        let tx = shared.tx.clone();
+        let path_id = self.path_id;
+        let remain_report_depth = self.remain_report_depth;
 
-            if remain_report_depth > 0 {
-                let event = Event::DirFinish {
-                    path: path_id,
-                    size,
-                    num_files,
-                };
-                let _ = tx.send(event);
-            }
+        let next_remain_report_depth = remain_report_depth.saturating_sub(1);
+        let (num_files, size) = std::fs::read_dir(self.path.clone())
+            .report()?
+            .par_bridge()
+            .fold(
+                || (0, 0),
+                |(num_files, size), entry| {
+                    let Ok(entry) = entry else {
+                        return (num_files, size);
+                    };
 
-            Some((num_files, size))
-        })
-    }
+                    let path = entry.path().into();
+                    let task = Self {
+                        remain_report_depth: next_remain_report_depth,
+                        path_id: shared.path_mgr.intern(&path),
+                        parent: Some(self.path_id),
+                        path,
+                    };
 
-    fn dir_task(&self, t: std::fs::DirEntry) -> Option<Self> {
-        let path = t.path().into();
-        Some(Self {
-            remain_report_depth: self.remain_report_depth.saturating_sub(1),
-            file_type: t.file_type().ok()?,
-            path_id: self.path_mgr.intern(&path),
-            parent: Some(self.path_id),
-            path,
-            path_mgr: self.path_mgr.clone(),
-            tx: self.tx.clone(),
-            follow_links: self.follow_links,
-        })
-    }
+                    let (sub_num_files, sub_size) = task.exec(shared).unwrap_or((0, 0));
+                    (num_files + sub_num_files, sub_size + size)
+                },
+            )
+            .reduce(
+                || (0, 0),
+                |(num_files_a, size_a), (num_files_b, size_b)| {
+                    (num_files_a + num_files_b, size_a + size_b)
+                },
+            );
 
-    fn send(&self, event: Event) {
-        let _ = self.tx.send(event);
-    }
-
-    fn send_entry(&self) {
-        if self.remain_report_depth == 0 {
-            return;
+        if remain_report_depth > 0 {
+            let event = Event::DirFinish {
+                path: path_id,
+                size,
+                num_files,
+            };
+            let _ = tx.send(event);
         }
-        let event = Event::Entry {
-            path: self.path_id,
-            parent: self.parent,
-            is_dir: self.file_type.is_dir(),
-        };
-        self.send(event);
+
+        Some((num_files, size))
+    }
+}
+
+trait Report {
+    type Target;
+
+    fn report(self) -> Option<Self::Target>
+    where
+        Self: Sized;
+}
+
+impl<T> Report for std::io::Result<T> {
+    type Target = T;
+
+    fn report(self) -> Option<T> {
+        match self {
+            Ok(v) => Some(v),
+            Err(e) => {
+                eprintln!("failed io: {e}");
+                None
+            }
+        }
     }
 }

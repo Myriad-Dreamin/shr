@@ -2,11 +2,14 @@
 //!
 //! shr hunts and reports disk space.
 
+pub mod utils;
+
 pub use scan::*;
 
 mod scan;
 
 use std::{
+    num::NonZeroUsize,
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -22,7 +25,19 @@ pub async fn shr(dir: PathBuf) -> ShrRx {
 /// The path id for shr
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct PathId(usize);
+pub struct PathId(NonZeroUsize);
+
+impl PathId {
+    /// Into a raw and unsafe `PathId` reference.
+    pub fn into_raw(self) -> NonZeroUsize {
+        self.0
+    }
+
+    /// Creates a new `PathId` instance.
+    pub fn from_raw(id: NonZeroUsize) -> Self {
+        Self(id)
+    }
+}
 
 /// The event yield by `shr`.
 #[derive(Debug)]
@@ -37,21 +52,24 @@ impl From<EventRef<'_>> for Event {
     }
 }
 
+impl EventRef<'_> {
+    /// Converts to raw event.
+    pub fn to_raw(self) -> Event {
+        self.data
+    }
+}
+
 impl<'a> EventRef<'a> {
     /// Creates a new `EventRef` instance.
     pub fn display(&self) -> EventDisplay {
         match self.data {
-            Event::Entry {
-                path,
-                parent,
-                is_dir,
-            } => EventDisplay::Entry {
+            Event::Dir { path, parent } => EventDisplay::Dir {
                 path: self.rx.get_path(path).map(ImmutPath),
                 parent: parent.and_then(|parent| self.rx.get_path(parent).map(ImmutPath)),
-                is_dir,
             },
-            Event::FileFinish { path, size } => EventDisplay::FileFinish {
+            Event::FileFinish { path, parent, size } => EventDisplay::FileFinish {
                 path: self.rx.get_path(path).map(ImmutPath),
+                parent: parent.and_then(|parent| self.rx.get_path(parent).map(ImmutPath)),
                 size,
             },
             Event::DirFinish {
@@ -83,18 +101,18 @@ impl serde::Serialize for EventRef<'_> {
 #[cfg_attr(feature = "serde", serde(tag = "type", rename_all = "camelCase"))]
 pub enum Event {
     /// A file entry is found.
-    Entry {
+    Dir {
         /// The path to the entry.
         path: PathId,
         /// The parent directory.
         parent: Option<PathId>,
-        /// Whether the entry is a directory.
-        is_dir: bool,
     },
     /// A directory is found.
     FileFinish {
         /// The path to the entry.
         path: PathId,
+        /// The parent directory.
+        parent: Option<PathId>,
         /// The size of the file in bytes, recursively.
         size: u64,
     },
@@ -115,18 +133,18 @@ pub enum Event {
 #[cfg_attr(feature = "serde", serde(tag = "type", rename_all = "camelCase"))]
 pub enum EventDisplay {
     /// A file is found.
-    Entry {
+    Dir {
         /// The path to the entry.
         path: Option<ImmutPath>,
         /// The parent directory.
         parent: Option<ImmutPath>,
-        /// Whether the entry is a directory.
-        is_dir: bool,
     },
     /// A directory is found.
     FileFinish {
         /// The path to the entry.
         path: Option<ImmutPath>,
+        /// The parent directory.
+        parent: Option<ImmutPath>,
         /// The size of the file in bytes, recursively.
         size: u64,
     },
