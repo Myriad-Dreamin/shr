@@ -1,6 +1,5 @@
 .DS_STORE
 .idea
-.vscode
 
 target/
 out/
