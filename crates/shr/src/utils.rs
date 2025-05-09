@@ -4,30 +4,10 @@ use core::fmt;
 
 static UNITS: [char; 5] = ['P', 'T', 'G', 'M', 'K'];
 
-// If we are working with SI units or not
-fn get_type_of_thousand(output_str: &str) -> u64 {
-    if output_str.is_empty() {
-        1024
-    } else if output_str == "si" {
-        1000
-    } else if output_str.contains('i') || output_str.len() == 1 {
-        1024
-    } else {
-        1000
-    }
-}
-
-fn get_number_format(output_str: &str) -> Option<(u64, char)> {
-    if output_str.starts_with('b') {
-        return Some((1, 'B'));
-    }
-    for (i, u) in UNITS.iter().enumerate() {
-        if output_str.starts_with((*u).to_ascii_lowercase()) {
-            let marker = get_type_of_thousand(output_str).pow((UNITS.len() - i) as u32);
-            return Some((marker, *u));
-        }
-    }
-    None
+/// Converts a number to a human-readable format.
+/// output_str: `si` for SI units, `bi` for binary units, or `b` for bytes.
+pub fn human_readable_number(size: u64, output_str: &str) -> Hr {
+    Hr(size, output_str)
 }
 
 /// A struct to represent a human-readable number.
@@ -57,8 +37,28 @@ impl fmt::Display for Hr<'_> {
     }
 }
 
-/// Converts a number to a human-readable format.
-/// output_str: `si` for SI units, `bi` for binary units, or `b` for bytes.
-pub fn human_readable_number(size: u64, output_str: &str) -> Hr {
-    Hr(size, output_str)
+// If we are working with SI units or not
+fn get_type_of_thousand(output_str: &str) -> u64 {
+    if output_str.is_empty() {
+        1024
+    } else if output_str == "si" {
+        1000
+    } else if output_str.contains('i') || output_str.len() == 1 {
+        1024
+    } else {
+        1000
+    }
+}
+
+fn get_number_format(output_str: &str) -> Option<(u64, char)> {
+    if output_str.starts_with('b') {
+        return Some((1, 'B'));
+    }
+    for (i, u) in UNITS.iter().enumerate() {
+        if output_str.starts_with((*u).to_ascii_lowercase()) {
+            let marker = get_type_of_thousand(output_str).pow((UNITS.len() - i) as u32);
+            return Some((marker, *u));
+        }
+    }
+    None
 }

@@ -1,14 +1,15 @@
 //! rayon is used to avoid "Too many open files" error.
 
-use rayon::iter::ParallelBridge;
-use rayon::iter::ParallelIterator;
+use rayon::iter::{ParallelBridge, ParallelIterator};
 pub(crate) use tokio::sync::mpsc;
+
+use crate::PathInterner;
 
 use super::*;
 /// The receiver for the events.
 #[derive(Debug)]
 pub struct ShrRx {
-    pub(crate) path_mgr: Arc<PathInterner>,
+    pub(crate) path_interner: Arc<PathInterner>,
     pub(crate) rx: mpsc::UnboundedReceiver<Event>,
 }
 
@@ -20,7 +21,7 @@ impl ShrRx {
 
     /// Gets the path for the given `PathId`.
     pub fn get_path(&self, id: PathId) -> Option<Arc<Path>> {
-        self.path_mgr.as_ref().get(id)
+        self.path_interner.as_ref().get(id)
     }
 }
 
