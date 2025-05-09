@@ -1,46 +1,43 @@
-use std::{
-    num::NonZeroUsize,
-    path::{Path, PathBuf},
-    sync::{Arc, Mutex},
-};
+//! This crate implements the scan function.
+//!
+//! ## Backends
+//!
+//! It has a tokio backend. There was a compio backend, but I deleted it for
+//! buggy code. We may add other backend in future.
 
-use indexmap::IndexSet;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
-use crate::{Event, EventRef, PathId};
+use crate::{Event, EventRef, PathId, PathInterner};
 
 #[cfg(feature = "tokio")]
 mod tokio_backend;
 #[cfg(feature = "tokio")]
 pub use tokio_backend::*;
 
-/// The main struct.
+/// The main struct to scan the directory recursively.
 pub struct Shr {
     /// The path to scan.
     path: PathBuf,
     /// The path interner.
-    path_mgr: Arc<PathInterner>,
-    /// The sender for the events.
-    tx: mpsc::UnboundedSender<Event>,
-    /// The receiver for the events.
-    rx: mpsc::UnboundedReceiver<Event>,
+    path_interner: Arc<PathInterner>,
+    /// The maximum depth to report.
     max_depth: usize,
 }
 
 impl Shr {
-    /// Creates a new `Shr` instance.
+    /// Creates a `Shr` that scans files in the `path`.
     pub fn new(path: PathBuf) -> Self {
-        let path_mgr = Arc::new(PathInterner::default());
-        let (tx, rx) = mpsc::unbounded_channel();
         Self {
             path,
-            path_mgr,
-            tx,
-            rx,
+            path_interner: Arc::new(PathInterner::default()),
             max_depth: usize::MAX,
         }
     }
 
-    /// Sets the maximum depth for the scan.
+    /// Sets the maximum depth to *report*. That is, all the files under the
+    /// directory are still scanned but only the files whose path is less than
+    /// `max_depth` is printed.
     pub fn with_max_depth(mut self, max_depth: usize) -> Self {
         self.max_depth = max_depth.saturating_add(1);
         self
@@ -48,18 +45,17 @@ impl Shr {
 
     /// Runs the scan routine.
     pub async fn run(self) -> ShrRx {
-        let rx = self.rx;
-        let tx = self.tx;
-        let path_mgr = self.path_mgr;
+        let (tx, rx) = mpsc::unbounded_channel();
+        let path_interner = self.path_interner;
 
         let path = self.path.into();
         let task = ShrTask {
-            path_id: path_mgr.intern(&path),
+            path_id: path_interner.intern(&path),
             parent: None,
             path,
             remain_report_depth: self.max_depth,
         };
-        let path_mgr2 = path_mgr.clone();
+        let path_mgr2 = path_interner.clone();
         tokio::spawn(tokio::task::spawn_blocking(move || {
             let shared = Shared {
                 path_mgr: &path_mgr2,
@@ -69,35 +65,6 @@ impl Shr {
             task.exec(&shared)
         }));
 
-        ShrRx { path_mgr, rx }
-    }
-}
-
-#[derive(Debug)]
-pub(crate) struct PathInterner {
-    /// The paths.
-    paths: Mutex<IndexSet<Arc<Path>>>,
-}
-
-impl Default for PathInterner {
-    fn default() -> Self {
-        let mut paths = IndexSet::new();
-        paths.insert(PathBuf::from("_never_touched_zero_").into());
-        Self {
-            paths: Mutex::new(paths),
-        }
-    }
-}
-
-impl PathInterner {
-    /// Interns a path.
-    fn intern(&self, path: &Arc<Path>) -> PathId {
-        let mut paths = self.paths.lock().unwrap();
-        PathId(NonZeroUsize::new(paths.insert_full(path.clone()).0).unwrap())
-    }
-
-    fn get(&self, id: PathId) -> Option<Arc<Path>> {
-        let paths = self.paths.lock().unwrap();
-        paths.get_index(id.0.get()).cloned()
+        ShrRx { path_interner, rx }
     }
 }

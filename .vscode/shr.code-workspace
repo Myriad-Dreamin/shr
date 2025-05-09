@@ -5,6 +5,11 @@
     }
   ],
   "settings": {
+    "rust-analyzer.check.command": "clippy",
+    "rust-analyzer.rustfmt.extraArgs": ["--config=wrap_comments=true"],
+    "files.watcherExclude": {
+      "**/target": true
+    },
     "[json][jsonc][jsonl][toml]": {
       "editor.formatOnSave": true,
       "editor.defaultFormatter": "esbenp.prettier-vscode"
